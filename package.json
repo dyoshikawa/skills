@@ -1,0 +1,26 @@
+{
+  "name": "skills",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "author": "dyoshikawa",
+  "type": "module",
+  "packageManager": "pnpm@11.22.0",
+  "scripts": {
+    "prepare": "simple-git-hooks",
+    "secretlint": "secretlint --secretlintignore .gitignore \"**/*\""
+  },
+  "simple-git-hooks": {
+    "pre-commit": "pnpm exec lint-staged"
+  },
+  "devDependencies": {
+    "@secretlint/secretlint-rule-preset-recommend": "13.0.4",
+    "lint-staged": "17.3.0",
+    "secretlint": "13.0.4",
+    "simple-git-hooks": "2.13.1"
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=10"
+  }
+}
