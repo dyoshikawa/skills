@@ -378,13 +378,13 @@ playwright-cli show --annotate
 
 ## Specific tasks
 
-- **Running and Debugging Playwright tests** [playwright-cli/references/playwright-tests.md](playwright-cli/references/playwright-tests.md)
-- **Request mocking** [playwright-cli/references/request-mocking.md](playwright-cli/references/request-mocking.md)
-- **Running Playwright code** [playwright-cli/references/running-code.md](playwright-cli/references/running-code.md)
-- **Browser session management** [playwright-cli/references/session-management.md](playwright-cli/references/session-management.md)
-- **Spec-driven testing (plan / generate / heal)** [playwright-cli/references/spec-driven-testing.md](playwright-cli/references/spec-driven-testing.md)
-- **Storage state (cookies, localStorage)** [playwright-cli/references/storage-state.md](playwright-cli/references/storage-state.md)
-- **Test generation** [playwright-cli/references/test-generation.md](playwright-cli/references/test-generation.md)
-- **Tracing** [playwright-cli/references/tracing.md](playwright-cli/references/tracing.md)
-- **Video recording** [playwright-cli/references/video-recording.md](playwright-cli/references/video-recording.md)
-- **Inspecting element attributes** [playwright-cli/references/element-attributes.md](playwright-cli/references/element-attributes.md)
+- **Running and Debugging Playwright tests** [references/playwright-tests.md](references/playwright-tests.md)
+- **Request mocking** [references/request-mocking.md](references/request-mocking.md)
+- **Running Playwright code** [references/running-code.md](references/running-code.md)
+- **Browser session management** [references/session-management.md](references/session-management.md)
+- **Spec-driven testing (plan / generate / heal)** [references/spec-driven-testing.md](references/spec-driven-testing.md)
+- **Storage state (cookies, localStorage)** [references/storage-state.md](references/storage-state.md)
+- **Test generation** [references/test-generation.md](references/test-generation.md)
+- **Tracing** [references/tracing.md](references/tracing.md)
+- **Video recording** [references/video-recording.md](references/video-recording.md)
+- **Inspecting element attributes** [references/element-attributes.md](references/element-attributes.md)
