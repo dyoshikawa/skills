@@ -1,6 +1,6 @@
 # Skills
 
-A collection of 38 skills for maintaining OSS projects on GitHub — triaging issues, reviewing and merging pull requests, cutting releases, and keeping branches tidy.
+A collection of 39 skills for maintaining OSS projects on GitHub — triaging issues, reviewing and merging pull requests, cutting releases, and keeping branches tidy.
 
 Each skill is a `SKILL.md` with YAML frontmatter, following the [Agent Skills](https://code.claude.com/docs/en/skills) convention, so it can be used with any coding agent that reads that format.
 
@@ -138,6 +138,7 @@ Some skills assume a `maintainer-scrap` label for notes-to-self issues, and that
 | --- | --- |
 | [`playwright-cli`](skills/playwright-cli/SKILL.md) | Automate browser interactions, test web pages and work with Playwright tests. |
 | [`porting-another-repository`](skills/porting-another-repository/SKILL.md) | Plan how to port a feature, configuration, or implementation from this repository into another repository. Analyzes the source feature here and the target repo's conventions, then writes a multi-file porting plan (overview, source analysis, target analysis, plan, diff) to tmp/porting-another-repository-{YYYYMMDD-HHmm}/*.md for the user to review and apply manually. |
+| [`security-scan-repository`](skills/security-scan-repository/SKILL.md) | Scan an entire repository for security issues and malicious code — leaked secrets, injection and code-execution flaws, supply chain and CI/CD risks, insecure configuration, and malicious instructions hidden in AI rule files. Use when the user wants a whole-repository security scan or audit, rather than the diff-scoped `security-scan-diff`. |
 | [`skill-creator`](skills/skill-creator/SKILL.md) | Guide for creating effective skills. This skill should be used when users want to create a new skill (or update an existing skill) that extends Claude's capabilities with specialized knowledge, workflows, or tool integrations. |
 
 ## Development
