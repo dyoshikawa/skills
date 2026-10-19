@@ -59,4 +59,4 @@ Do not call paid or rate-limited external APIs, deploy, or change anything outsi
 4. Edit the files: delete, merge and move entries; keep each file's one-line purpose and its section structure; remove sections left empty. Delete a file that is left with nothing, and create no new files except when moving cross-repository knowledge into a topic file that does not exist yet.
 5. Update `memories/README.md` so each line still describes what its file covers, and drop lines for deleted files.
 6. Show the user a short summary per file: what was deleted and why, what was merged into what, and any entry you kept only because it could not be verified.
-7. Commit only the memory files (`git add memories && git commit`) with a message such as `docs(memories): garbage-collect stale and duplicated entries` — the workspace commits straight to `main`.
+7. Commit only the memory files (`git add memories && git commit`) with a message such as `docs(memories): garbage-collect stale and duplicated entries` — on the workspace's default branch, or through a pull request if your workflow requires one.

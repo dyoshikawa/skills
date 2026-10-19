@@ -1,6 +1,6 @@
 # Skills
 
-A collection of 45 skills for maintaining OSS projects on GitHub — triaging issues, reviewing and merging pull requests, cutting releases, and keeping branches tidy.
+A collection of 45 skills for maintaining OSS projects on GitHub — triaging issues, reviewing and merging pull requests, cutting releases, and keeping branches tidy — plus a few general-purpose ones for writing, notes and workspace tooling.
 
 Each skill is a `SKILL.md` with YAML frontmatter, following the [Agent Skills](https://code.claude.com/docs/en/skills) convention, so it can be used with any coding agent that reads that format.
 
@@ -134,13 +134,13 @@ Some skills assume a `maintainer-scrap` label for notes-to-self issues, and that
 
 ### Workspace and memory
 
-These assume a workspace that keeps several repositories cloned under `repos/` and long-lived notes under `memories/` (one file per repository in `memories/repos/`, one per technical area, indexed by `memories/README.md`).
+These assume a workspace that keeps several repositories cloned under `repos/` and long-lived notes under `memories/` (one file per repository in `memories/repos/`, one per technical area, indexed by `memories/README.md`). `sync-repo-skills` also expects the workspace to be managed with `rulesync` (it writes `.rulesync/skills/` and runs `rulesync generate`).
 
 | Skill | Description |
 | --- | --- |
 | [`record-session-memory`](skills/record-session-memory/SKILL.md) | Record what this session taught into the git-managed memory files under memories/ — pitfalls to watch for in later sessions and domain knowledge worth reusing — split by repository and by technical area. Use when the user asks to remember something, to save the session's learnings, or at the end of a piece of work that produced non-obvious knowledge. |
 | [`garbage-collect-memory`](skills/garbage-collect-memory/SKILL.md) | Garbage-collect the git-managed memory files under memories/: delete knowledge that no longer holds or is no longer needed, and merge duplicated entries into one — within a file and across the repository and topic files — so the memory stays short, current and consistent. Use when the user asks to clean up, prune, tidy, deduplicate or garbage-collect the memories, or when the memory files have grown long enough that stale or repeated entries get in the way. |
-| [`sync-repo-skills`](skills/sync-repo-skills/SKILL.md) | Mirror the skills of a repository under repos/ into this workspace as `<repo>-<name>` copies (repos/<repo>/.rulesync/skills/<name> -> .rulesync/skills/<repo>-<name>), rewriting each copy's name and its references to sibling skills so the imported set calls itself, and removing copies whose source skill is gone. Use when the user asks to import or sync a repository's skills into the workspace, e.g. "repos/rulesync のスキルを同期", "sync the rulesync skills", "take repo X's skills into the workspace". |
+| [`sync-repo-skills`](skills/sync-repo-skills/SKILL.md) | Mirror the skills of a repository under repos/ into this workspace as `<repo>-<name>` copies (`repos/<repo>/.rulesync/skills/<name>` -> `.rulesync/skills/<repo>-<name>`), rewriting each copy's name and its references to sibling skills so the imported set calls itself, and removing copies whose source skill is gone. Use when the user asks to import or sync a repository's skills into the workspace, e.g. "repos/rulesync のスキルを同期", "sync the rulesync skills", "take repo X's skills into the workspace". |
 
 ### Other
 
@@ -156,7 +156,7 @@ These assume a workspace that keeps several repositories cloned under `repos/` a
 
 ## Third-party skills
 
-[`grilling`](skills/grilling/LICENSE.txt) (Matt Pocock) and [`yomiyasu`](skills/yomiyasu/LICENSE) ([nanaism/yomiyasu](https://github.com/nanaism/yomiyasu)) are redistributed under their own MIT licenses, which ship inside their directories.
+[`grilling`](skills/grilling/LICENSE.txt) ([mattpocock/skills](https://github.com/mattpocock/skills)) and [`yomiyasu`](skills/yomiyasu/LICENSE) ([nanaism/yomiyasu](https://github.com/nanaism/yomiyasu)) are redistributed under their own MIT licenses, which ship inside their directories.
 
 ## Development
 

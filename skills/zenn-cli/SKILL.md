@@ -5,6 +5,7 @@ description: >-
   の一覧・取得・作成・更新・コメント投稿を、安全に行う。`zenn-cli`、Scrap、API
   キー、公開範囲、Secret・AI scan を扱う時に使う。
 ---
+
 # Zenn CLI
 
 Zenn CLI を使い、Public API 経由で Scrap の取得、作成、更新、コメント操作を行う。認証情報、公開範囲、投稿内容、機械可読出力を安全に扱う。

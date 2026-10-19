@@ -53,4 +53,4 @@ Repository-specific notes for `repos/my-app`.
 2. Go through the session and list candidate facts under the four headings above. Be selective: a handful of sharp entries beats a page of narrative.
 3. For each fact, pick the file by the rule in "Where it goes". Update an existing entry when it is the same fact (correct it if it was wrong; delete it if it no longer holds); otherwise add one under the fitting section.
 4. Update `memories/README.md` for any file added or removed.
-5. Show the user a short summary of what was recorded and where, then commit the memory files (`git add memories && git commit`) with a message such as `docs(memories): record <topic>` — the workspace commits straight to `main`.
+5. Show the user a short summary of what was recorded and where, then commit the memory files (`git add memories && git commit`) with a message such as `docs(memories): record <topic>` — on the workspace's default branch, or through a pull request if your workflow requires one.
