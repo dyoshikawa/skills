@@ -1,6 +1,6 @@
 # Skills
 
-A collection of 39 skills for maintaining OSS projects on GitHub — triaging issues, reviewing and merging pull requests, cutting releases, and keeping branches tidy.
+A collection of 45 skills for maintaining OSS projects on GitHub — triaging issues, reviewing and merging pull requests, cutting releases, and keeping branches tidy — plus a few general-purpose ones for writing, notes and workspace tooling.
 
 Each skill is a `SKILL.md` with YAML frontmatter, following the [Agent Skills](https://code.claude.com/docs/en/skills) convention, so it can be used with any coding agent that reads that format.
 
@@ -132,14 +132,31 @@ Some skills assume a `maintainer-scrap` label for notes-to-self issues, and that
 | [`clean-worktrees`](skills/clean-worktrees/SKILL.md) | Clean git worktrees created by git-worktree-runner |
 | [`git-worktree-runner`](skills/git-worktree-runner/SKILL.md) | Manages git worktrees using git-worktree-runner (gtr). Use when the user needs to create, list, remove, or navigate worktrees with `git gtr` commands, open editors or AI tools in worktrees, manage parallel development branches, or check out GitHub PRs (including from forks) into worktrees. |
 
+### Workspace and memory
+
+These assume a workspace that keeps several repositories cloned under `repos/` and long-lived notes under `memories/` (one file per repository in `memories/repos/`, one per technical area, indexed by `memories/README.md`). `sync-repo-skills` also expects the workspace to be managed with `rulesync` (it writes `.rulesync/skills/` and runs `rulesync generate`).
+
+| Skill | Description |
+| --- | --- |
+| [`record-session-memory`](skills/record-session-memory/SKILL.md) | Record what this session taught into the git-managed memory files under memories/ — pitfalls to watch for in later sessions and domain knowledge worth reusing — split by repository and by technical area. Use when the user asks to remember something, to save the session's learnings, or at the end of a piece of work that produced non-obvious knowledge. |
+| [`garbage-collect-memory`](skills/garbage-collect-memory/SKILL.md) | Garbage-collect the git-managed memory files under memories/: delete knowledge that no longer holds or is no longer needed, and merge duplicated entries into one — within a file and across the repository and topic files — so the memory stays short, current and consistent. Use when the user asks to clean up, prune, tidy, deduplicate or garbage-collect the memories, or when the memory files have grown long enough that stale or repeated entries get in the way. |
+| [`sync-repo-skills`](skills/sync-repo-skills/SKILL.md) | Mirror the skills of a repository under repos/ into this workspace as `<repo>-<name>` copies (`repos/<repo>/.rulesync/skills/<name>` -> `.rulesync/skills/<repo>-<name>`), rewriting each copy's name and its references to sibling skills so the imported set calls itself, and removing copies whose source skill is gone. Use when the user asks to import or sync a repository's skills into the workspace, e.g. "repos/rulesync のスキルを同期", "sync the rulesync skills", "take repo X's skills into the workspace". |
+
 ### Other
 
 | Skill | Description |
 | --- | --- |
+| [`grilling`](skills/grilling/SKILL.md) | Grill the user relentlessly about a plan, decision, or idea. Use when the user wants to stress-test their thinking, or uses any 'grill' trigger phrases. |
 | [`playwright-cli`](skills/playwright-cli/SKILL.md) | Automate browser interactions, test web pages and work with Playwright tests. |
 | [`porting-another-repository`](skills/porting-another-repository/SKILL.md) | Plan how to port a feature, configuration, or implementation from this repository into another repository. Analyzes the source feature here and the target repo's conventions, then writes a multi-file porting plan (overview, source analysis, target analysis, plan, diff) to tmp/porting-another-repository-{YYYYMMDD-HHmm}/*.md for the user to review and apply manually. |
 | [`security-scan-repository`](skills/security-scan-repository/SKILL.md) | Scan an entire repository for security issues and malicious code — leaked secrets, injection and code-execution flaws, supply chain and CI/CD risks, insecure configuration, and malicious instructions hidden in AI rule files. Use when the user wants a whole-repository security scan or audit, rather than the diff-scoped `security-scan-diff`. |
 | [`skill-creator`](skills/skill-creator/SKILL.md) | Guide for creating effective skills. This skill should be used when users want to create a new skill (or update an existing skill) that extends Claude's capabilities with specialized knowledge, workflows, or tool integrations. |
+| [`yomiyasu`](skills/yomiyasu/SKILL.md) | AIが生成した日本語の推敲に使うスキル。「この文章を読みやすくして」「AIっぽさをなくして」「自然な日本語にして」「文章を脱臭して」といった依頼や、技術記事、仕様書、PR説明文、社内レポート、エッセイ・noteの文章を見直すときに使用する。意味と条件を保ち、不自然な比喩、曖昧な主述関係、不要な装飾やコピー調を整える。 |
+| [`zenn-cli`](skills/zenn-cli/SKILL.md) | Zenn CLI による Scrap の一覧・取得・作成・更新・コメント投稿を、安全に行う。`zenn-cli`、Scrap、API キー、公開範囲、Secret・AI scan を扱う時に使う。 |
+
+## Third-party skills
+
+[`grilling`](skills/grilling/LICENSE.txt) ([mattpocock/skills](https://github.com/mattpocock/skills)) and [`yomiyasu`](skills/yomiyasu/LICENSE) ([nanaism/yomiyasu](https://github.com/nanaism/yomiyasu)) are redistributed under their own MIT licenses, which ship inside their directories.
 
 ## Development
 
