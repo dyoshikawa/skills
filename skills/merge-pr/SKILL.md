@@ -61,11 +61,12 @@ Check:
 1. All workflow checks show `pass` status
 2. No checks are `pending` or `fail`
 
-If any checks have failed or are still running, inform the user and ask whether to:
+If any checks have failed or are still running, do not merge. Inform the user and offer to:
 
 - Wait for pending checks to complete
-- Investigate failed checks before merging
-- Proceed with merge anyway (using `--admin` will bypass required checks)
+- Investigate failed checks and fix them before merging
+
+Never use `--admin` to merge past a failing or pending check. Proceed only after every check passes, or when the user explicitly confirms, for this specific PR, that the failing or pending check is unrelated and should be bypassed.
 
 ## Step 4: Merge the PR
 

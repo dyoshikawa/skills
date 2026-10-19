@@ -14,9 +14,9 @@
     "pre-commit": "pnpm exec lint-staged"
   },
   "devDependencies": {
-    "@secretlint/secretlint-rule-preset-recommend": "13.0.4",
+    "@secretlint/secretlint-rule-preset-recommend": "13.0.7",
     "lint-staged": "17.3.0",
-    "secretlint": "13.0.4",
+    "secretlint": "13.0.7",
     "simple-git-hooks": "2.13.1"
   },
   "engines": {
