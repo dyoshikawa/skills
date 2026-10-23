@@ -105,6 +105,10 @@ for n in "${names[@]}"; do
     echo "error: $src/$n contains a symlink; refusing to sync it" >&2
     exit 1
   fi
+  if [ -L "$dst/$prefix$n" ]; then
+    echo "error: refusing to replace a symlink: $dst/$prefix$n" >&2
+    exit 1
+  fi
 done
 alt=$(IFS='|'; echo "${names[*]}")
 
@@ -186,10 +190,6 @@ for n in "${names[@]}"; do
     done < "$log"
   fi
 
-  if [ -L "$dst/$target" ]; then
-    echo "error: refusing to replace a symlink: $dst/$target" >&2
-    exit 1
-  fi
   if [ -d "$dst/$target" ]; then
     if diff -rq "$dst/$target" "$stage" >/dev/null; then
       unchanged+=("$target")
