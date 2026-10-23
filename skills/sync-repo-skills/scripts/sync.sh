@@ -22,6 +22,12 @@
 # source skill that already starts with `<repo>-` gets it twice; those are
 # listed in the report.
 #
+# The source repository is untrusted input: a skill name must be a single plain
+# path component (no newline, '/', leading '.', or other control characters),
+# and the source and destination skills directories, every source skill
+# directory and anything inside it must not be a symlink, so nothing outside
+# .rulesync/skills/<repo>-<name> is ever written or deleted.
+#
 # The report on stdout lists added / updated / unchanged / removed skills, the
 # rewritten and skipped lines for review, double-prefixed names, and whether an
 # unprefixed workspace skill of the same name exists and is identical.
@@ -32,6 +38,16 @@ if [ $# -lt 1 ] || [ $# -gt 2 ]; then
   exit 2
 fi
 repo=$1
+# valid_name <name>: a single, plain path component.
+valid_name() {
+  case "$1" in
+    "" | .* | */* | *[[:cntrl:]]*) return 1 ;;
+  esac
+}
+if ! valid_name "$repo"; then
+  echo "error: invalid repository name: $repo" >&2
+  exit 2
+fi
 root=$(git rev-parse --show-toplevel)
 repos_root=${2:-$root/repos}
 src=$repos_root/$repo/.rulesync/skills
@@ -43,14 +59,43 @@ if [ ! -d "$src" ]; then
   echo "error: source skills directory not found: $src" >&2
   exit 1
 fi
-mapfile -t names < <(find "$src" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort)
+for d in "$src" "$dst"; do
+  if [ -L "$d" ]; then
+    echo "error: refusing to use a symlinked skills directory: $d" >&2
+    exit 1
+  fi
+done
+if [ ! -d "$dst" ]; then
+  echo "error: destination skills directory not found: $dst" >&2
+  exit 1
+fi
+# NUL-delimited so a name with a newline in it cannot split into several names.
+names=()
+while IFS= read -r -d '' p; do
+  n=${p##*/}
+  if [ -L "$p" ]; then
+    echo "error: refusing to sync a symlinked entry: $p" >&2
+    exit 1
+  fi
+  [ -d "$p" ] || continue
+  if ! valid_name "$n"; then
+    printf 'error: invalid skill directory name under %s: %q\n' "$src" "$n" >&2
+    exit 1
+  fi
+  names+=("$n")
+done < <(find "$src" -mindepth 1 -maxdepth 1 -print0)
 if [ ${#names[@]} -eq 0 ]; then
   echo "error: no skills under $src" >&2
   exit 1
 fi
+mapfile -t names < <(printf '%s\n' "${names[@]}" | sort)
 for n in "${names[@]}"; do
   if [ ! -f "$src/$n/SKILL.md" ]; then
     echo "error: $src/$n has no SKILL.md" >&2
+    exit 1
+  fi
+  if [ -n "$(find "$src/$n" -type l -print -quit)" ]; then
+    echo "error: $src/$n contains a symlink; refusing to sync it" >&2
     exit 1
   fi
 done
@@ -61,7 +106,9 @@ rewritten=() skipped=()
 
 # 1. Prune synced copies whose source is gone. Only directories carrying the
 #    marker qualify; anything else under the prefix may be a native skill.
-for d in "$dst/$prefix"*/; do
+for d in "$dst/$prefix"*; do
+  # Never follow a symlink: rm -rf on it (or on "link/") could reach outside $dst.
+  [ -L "$d" ] && continue
   [ -d "$d" ] || continue
   n=$(basename "$d")
   f="$d/SKILL.md"
@@ -121,13 +168,17 @@ for n in "${names[@]}"; do
     done < "$log"
   fi
 
+  if [ -L "$dst/$target" ]; then
+    echo "error: refusing to replace a symlink: $dst/$target" >&2
+    exit 1
+  fi
   if [ -d "$dst/$target" ]; then
     if diff -rq "$dst/$target" "$stage" >/dev/null; then
       unchanged+=("$target")
       continue
     fi
     grep -q -F "$marker" "$dst/$target/SKILL.md" 2>/dev/null || overwrote_unmarked+=("$target")
-    rm -rf "$dst/$target"
+    rm -rf "${dst:?}/$target"
     updated+=("$target")
   else
     added+=("$target")
@@ -154,7 +205,7 @@ if [ ${#double_prefixed[@]} -gt 0 ]; then
 fi
 echo "same-name workspace skills (unprefixed):"
 for n in "${names[@]}"; do
-  if [ -d "$dst/$n" ]; then
+  if [ -d "$dst/$n" ] && [ ! -L "$dst/$n" ]; then
     if diff -rq "$src/$n" "$dst/$n" >/dev/null; then echo "  $n: identical"; else echo "  $n: differs"; fi
   fi
 done

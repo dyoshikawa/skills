@@ -27,6 +27,7 @@ This assumes a workspace managed with [rulesync](https://github.com/dyoshikawa/r
 - In `SKILL.md` only, rewrites backticked mentions of any skill of the source set to the prefixed name (`` `goal-pr` `` → `` `rulesync-goal-pr` ``), so `rulesync-goal-pr` drives `rulesync-review-pr` and not the workspace's own `review-pr`, which may differ. A skill's own name in its own body is left alone unless the line says "skill", because such self-mentions are usually a same-named command (`playwright-cli`). `references/*.md` is never rewritten.
 - Applies the prefix literally, so a source skill whose name already starts with `<repo>-` ends up double-prefixed (`rulesync-rulesync-feature-research`); the report lists these.
 - Leaves `targets:` and everything else in the frontmatter as it was.
+- Treats the source repository as untrusted: it stops with an error, before touching anything, if a skill directory name is not a single plain path component (a newline, `/`, a leading `.`, or another control character in it), or if the source or destination skills directory, a source skill directory, or anything inside one is a symlink. A symlinked entry under `.rulesync/skills/` is never pruned or replaced.
 
 The `[repos-root]` argument only matters when the workspace checkout has no `repos/` of its own (a git worktree): pass the main checkout's, e.g. `/path/to/main-checkout/repos`.
 
