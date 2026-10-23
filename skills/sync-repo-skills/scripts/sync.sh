@@ -23,7 +23,7 @@
 # listed in the report.
 #
 # The source repository is untrusted input: a skill name must consist only of
-# letters, digits, '.', '_' and '-' and must not start with '.'; the source and
+# letters, digits, '.', '_' and '-' (hidden directories are skipped); the source and
 # destination skills directories must resolve to exactly
 # <repos-root>/<repo>/.rulesync/skills and <workspace>/.rulesync/skills (no
 # symlinked path component); and no source skill directory or anything inside
@@ -85,6 +85,8 @@ while IFS= read -r -d '' p; do
     exit 1
   fi
   [ -d "$p" ] || continue
+  # Hidden directories are rulesync's own (e.g. .curated/), not skills.
+  case "$n" in .*) continue ;; esac
   if ! valid_name "$n"; then
     printf 'error: invalid skill directory name under %s: %q\n' "$src" "$n" >&2
     exit 1
