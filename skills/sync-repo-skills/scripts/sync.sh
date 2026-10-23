@@ -22,11 +22,13 @@
 # source skill that already starts with `<repo>-` gets it twice; those are
 # listed in the report.
 #
-# The source repository is untrusted input: a skill name must be a single plain
-# path component (no newline, '/', leading '.', or other control characters),
-# and the source and destination skills directories, every source skill
-# directory and anything inside it must not be a symlink, so nothing outside
-# .rulesync/skills/<repo>-<name> is ever written or deleted.
+# The source repository is untrusted input: a skill name must consist only of
+# letters, digits, '.', '_' and '-' and must not start with '.'; the source and
+# destination skills directories must resolve to exactly
+# <repos-root>/<repo>/.rulesync/skills and <workspace>/.rulesync/skills (no
+# symlinked path component); and no source skill directory or anything inside
+# it may be a symlink. So nothing outside .rulesync/skills/<repo>-<name> is
+# ever written or deleted, and nothing outside the source tree is read.
 #
 # The report on stdout lists added / updated / unchanged / removed skills, the
 # rewritten and skipped lines for review, double-prefixed names, and whether an
@@ -38,10 +40,11 @@ if [ $# -lt 1 ] || [ $# -gt 2 ]; then
   exit 2
 fi
 repo=$1
-# valid_name <name>: a single, plain path component.
+# valid_name <name>: a single, plain path component that is also safe to use
+# literally inside the perl regex built from the skill names.
 valid_name() {
   case "$1" in
-    "" | .* | */* | *[[:cntrl:]]*) return 1 ;;
+    "" | .* | *[!A-Za-z0-9._-]*) return 1 ;;
   esac
 }
 if ! valid_name "$repo"; then
@@ -59,14 +62,18 @@ if [ ! -d "$src" ]; then
   echo "error: source skills directory not found: $src" >&2
   exit 1
 fi
-for d in "$src" "$dst"; do
-  if [ -L "$d" ]; then
-    echo "error: refusing to use a symlinked skills directory: $d" >&2
-    exit 1
-  fi
-done
 if [ ! -d "$dst" ]; then
   echo "error: destination skills directory not found: $dst" >&2
+  exit 1
+fi
+# Refuse a symlink anywhere on the way to either skills directory.
+if [ "$(realpath -e "$src")" != "$(realpath -e "$repos_root")/$repo/.rulesync/skills" ] ||
+  [ -L "$repos_root/$repo" ]; then
+  echo "error: refusing to use a source skills directory reached through a symlink: $src" >&2
+  exit 1
+fi
+if [ "$(realpath -e "$dst")" != "$(realpath -e "$root")/.rulesync/skills" ]; then
+  echo "error: refusing to use a destination skills directory reached through a symlink: $dst" >&2
   exit 1
 fi
 # NUL-delimited so a name with a newline in it cannot split into several names.
