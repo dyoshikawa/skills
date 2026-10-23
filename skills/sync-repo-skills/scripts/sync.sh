@@ -22,6 +22,14 @@
 # source skill that already starts with `<repo>-` gets it twice; those are
 # listed in the report.
 #
+# The source repository is untrusted input: a skill name must consist only of
+# letters, digits, '.', '_' and '-' (hidden directories are skipped); the source and
+# destination skills directories must resolve to exactly
+# <repos-root>/<repo>/.rulesync/skills and <workspace>/.rulesync/skills (no
+# symlinked path component); and no source skill directory or anything inside
+# it may be a symlink. So nothing outside .rulesync/skills/<repo>-<name> is
+# ever written or deleted, and nothing outside the source tree is read.
+#
 # The report on stdout lists added / updated / unchanged / removed skills, the
 # rewritten and skipped lines for review, double-prefixed names, and whether an
 # unprefixed workspace skill of the same name exists and is identical.
@@ -32,6 +40,17 @@ if [ $# -lt 1 ] || [ $# -gt 2 ]; then
   exit 2
 fi
 repo=$1
+# valid_name <name>: a single, plain path component (the perl rewrite quotes
+# each name, so '.' in a name matches only a literal dot).
+valid_name() {
+  case "$1" in
+    "" | .* | *[!A-Za-z0-9._-]*) return 1 ;;
+  esac
+}
+if ! valid_name "$repo"; then
+  echo "error: invalid repository name: $repo" >&2
+  exit 2
+fi
 root=$(git rev-parse --show-toplevel)
 repos_root=${2:-$root/repos}
 src=$repos_root/$repo/.rulesync/skills
@@ -43,30 +62,82 @@ if [ ! -d "$src" ]; then
   echo "error: source skills directory not found: $src" >&2
   exit 1
 fi
-mapfile -t names < <(find "$src" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort)
+if [ ! -d "$dst" ]; then
+  echo "error: destination skills directory not found: $dst" >&2
+  exit 1
+fi
+# Refuse a symlink anywhere on the way to either skills directory.
+if [ "$(realpath -e "$src")" != "$(realpath -e "$repos_root")/$repo/.rulesync/skills" ] ||
+  [ -L "$repos_root/$repo" ]; then
+  echo "error: refusing to use a source skills directory reached through a symlink: $src" >&2
+  exit 1
+fi
+if [ "$(realpath -e "$dst")" != "$(realpath -e "$root")/.rulesync/skills" ]; then
+  echo "error: refusing to use a destination skills directory reached through a symlink: $dst" >&2
+  exit 1
+fi
+# NUL-delimited so a name with a newline in it cannot split into several names.
+names=()
+while IFS= read -r -d '' p; do
+  n=${p##*/}
+  if [ -L "$p" ]; then
+    echo "error: refusing to sync a symlinked entry: $p" >&2
+    exit 1
+  fi
+  [ -d "$p" ] || continue
+  # Hidden directories are rulesync's own (e.g. .curated/), not skills.
+  case "$n" in .*) continue ;; esac
+  if ! valid_name "$n"; then
+    printf 'error: invalid skill directory name under %s: %q\n' "$src" "$n" >&2
+    exit 1
+  fi
+  names+=("$n")
+done < <(find "$src" -mindepth 1 -maxdepth 1 -print0)
 if [ ${#names[@]} -eq 0 ]; then
   echo "error: no skills under $src" >&2
   exit 1
 fi
+mapfile -t names < <(printf '%s\n' "${names[@]}" | sort)
 for n in "${names[@]}"; do
   if [ ! -f "$src/$n/SKILL.md" ]; then
     echo "error: $src/$n has no SKILL.md" >&2
     exit 1
   fi
+  if [ -n "$(find "$src/$n" -type l -print -quit)" ]; then
+    echo "error: $src/$n contains a symlink; refusing to sync it" >&2
+    exit 1
+  fi
+  if [ -L "$dst/$prefix$n" ]; then
+    echo "error: refusing to replace a symlink: $dst/$prefix$n" >&2
+    exit 1
+  fi
 done
 alt=$(IFS='|'; echo "${names[*]}")
+
+# synced_from <SKILL.md> <name>: print the synced-from marker line only where
+# the script itself puts it — in the frontmatter, right after `name: <name>` —
+# so a marker-like line elsewhere in a source skill cannot fake one.
+synced_from() {
+  awk -v want="name: $2" '
+    /^---[[:space:]]*$/ { if (++fm == 2) exit; next }
+    fm == 1 { if (prev == want && index($0, "# synced-from: ") == 1) { print; exit } prev = $0 }
+  ' "$1"
+}
 
 added=() updated=() unchanged=() removed=() double_prefixed=() overwrote_unmarked=()
 rewritten=() skipped=()
 
 # 1. Prune synced copies whose source is gone. Only directories carrying the
 #    marker qualify; anything else under the prefix may be a native skill.
-for d in "$dst/$prefix"*/; do
+for d in "$dst/$prefix"*; do
+  # Never follow a symlink: rm -rf on it (or on "link/") could reach outside $dst.
+  [ -L "$d" ] && continue
   [ -d "$d" ] || continue
   n=$(basename "$d")
   f="$d/SKILL.md"
   [ -f "$f" ] || continue
-  line=$(grep -m1 -F "$marker" "$f") || continue
+  line=$(synced_from "$f" "$n")
+  case "$line" in "$marker"*) ;; *) continue ;; esac
   from=${line#"$marker"}
   if [ ! -d "$src/$from" ] || [ "$n" != "$prefix$from" ]; then
     rm -rf "$d"
@@ -85,7 +156,7 @@ for n in "${names[@]}"; do
   cp -R "$src/$n" "$stage"
   log="$tmp/$target.log"
   NAME="$n" PREFIX="$prefix" ALT="$alt" MARKER="$marker$n" LOG="$log" perl -i -pe '
-    BEGIN { $fm = 0; $done_name = 0; $alt = qr/`($ENV{ALT})`/; }
+    BEGIN { $fm = 0; $done_name = 0; my $a = join "|", map { quotemeta } split /\|/, $ENV{ALT}; $alt = qr/`($a)`/; }
     $line = $.;
     if (/^---\s*$/) { $fm++; }
     $in_fm = ($fm == 1);
@@ -108,7 +179,7 @@ for n in "${names[@]}"; do
       open(my $l, ">>", $ENV{LOG}); print $l "rewrote $line: $_"; close $l;
     }
   ' "$stage/SKILL.md"
-  if ! grep -q -F "$marker$n" "$stage/SKILL.md"; then
+  if [ "$(synced_from "$stage/SKILL.md" "$target")" != "$marker$n" ]; then
     echo "error: $src/$n/SKILL.md has no 'name: $n' line in its frontmatter" >&2
     exit 1
   fi
@@ -126,8 +197,11 @@ for n in "${names[@]}"; do
       unchanged+=("$target")
       continue
     fi
-    grep -q -F "$marker" "$dst/$target/SKILL.md" 2>/dev/null || overwrote_unmarked+=("$target")
-    rm -rf "$dst/$target"
+    case "$(synced_from "$dst/$target/SKILL.md" "$target" 2>/dev/null)" in
+      "$marker"*) ;;
+      *) overwrote_unmarked+=("$target") ;;
+    esac
+    rm -rf "${dst:?}/$target"
     updated+=("$target")
   else
     added+=("$target")
@@ -154,7 +228,7 @@ if [ ${#double_prefixed[@]} -gt 0 ]; then
 fi
 echo "same-name workspace skills (unprefixed):"
 for n in "${names[@]}"; do
-  if [ -d "$dst/$n" ]; then
+  if [ -d "$dst/$n" ] && [ ! -L "$dst/$n" ]; then
     if diff -rq "$src/$n" "$dst/$n" >/dev/null; then echo "  $n: identical"; else echo "  $n: differs"; fi
   fi
 done

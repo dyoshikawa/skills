@@ -23,10 +23,11 @@ This assumes a workspace managed with [rulesync](https://github.com/dyoshikawa/r
 `scripts/sync.sh <repo> [repos-root]` (relative to this skill's directory) — the source of truth for the logic; read its header comment for details. In short, for every `repos/<repo>/.rulesync/skills/<name>/`:
 
 - Copies the directory whole (`references/`, `LICENSE.txt`, …) to `.rulesync/skills/<repo>-<name>/`, replacing any previous copy.
-- Sets the frontmatter `name` to `<repo>-<name>` and adds a `# synced-from: repos/<repo>/.rulesync/skills/<name>` YAML comment below it. The comment is the marker that tells a synced copy from a native workspace skill; only marked directories are ever deleted.
+- Sets the frontmatter `name` to `<repo>-<name>` and adds a `# synced-from: repos/<repo>/.rulesync/skills/<name>` YAML comment below it. The comment is the marker that tells a synced copy from a native workspace skill, and it counts only right below the `name:` line, where the script puts it; only marked directories are ever deleted.
 - In `SKILL.md` only, rewrites backticked mentions of any skill of the source set to the prefixed name (`` `goal-pr` `` → `` `rulesync-goal-pr` ``), so `rulesync-goal-pr` drives `rulesync-review-pr` and not the workspace's own `review-pr`, which may differ. A skill's own name in its own body is left alone unless the line says "skill", because such self-mentions are usually a same-named command (`playwright-cli`). `references/*.md` is never rewritten.
 - Applies the prefix literally, so a source skill whose name already starts with `<repo>-` ends up double-prefixed (`rulesync-rulesync-feature-research`); the report lists these.
 - Leaves `targets:` and everything else in the frontmatter as it was.
+- Treats the source repository as untrusted: it stops with an error, before touching anything, if a skill directory name has anything but letters, digits, `.`, `_` and `-` in it (hidden directories such as rulesync's `.curated/` are skipped), if the source or destination skills directory is reached through a symlink, or if a source skill directory or anything inside one is a symlink. A symlinked entry under `.rulesync/skills/` is never pruned or replaced.
 
 The `[repos-root]` argument only matters when the workspace checkout has no `repos/` of its own (a git worktree): pass the main checkout's, e.g. `/path/to/main-checkout/repos`.
 
