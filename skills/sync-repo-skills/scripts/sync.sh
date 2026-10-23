@@ -40,8 +40,8 @@ if [ $# -lt 1 ] || [ $# -gt 2 ]; then
   exit 2
 fi
 repo=$1
-# valid_name <name>: a single, plain path component that is also safe to use
-# literally inside the perl regex built from the skill names.
+# valid_name <name>: a single, plain path component (the perl rewrite quotes
+# each name, so '.' in a name matches only a literal dot).
 valid_name() {
   case "$1" in
     "" | .* | *[!A-Za-z0-9._-]*) return 1 ;;
@@ -108,6 +108,16 @@ for n in "${names[@]}"; do
 done
 alt=$(IFS='|'; echo "${names[*]}")
 
+# synced_from <SKILL.md> <name>: print the synced-from marker line only where
+# the script itself puts it — in the frontmatter, right after `name: <name>` —
+# so a marker-like line elsewhere in a source skill cannot fake one.
+synced_from() {
+  awk -v want="name: $2" '
+    /^---[[:space:]]*$/ { if (++fm == 2) exit; next }
+    fm == 1 { if (prev == want && index($0, "# synced-from: ") == 1) { print; exit } prev = $0 }
+  ' "$1"
+}
+
 added=() updated=() unchanged=() removed=() double_prefixed=() overwrote_unmarked=()
 rewritten=() skipped=()
 
@@ -120,7 +130,8 @@ for d in "$dst/$prefix"*; do
   n=$(basename "$d")
   f="$d/SKILL.md"
   [ -f "$f" ] || continue
-  line=$(grep -m1 -F "$marker" "$f") || continue
+  line=$(synced_from "$f" "$n")
+  case "$line" in "$marker"*) ;; *) continue ;; esac
   from=${line#"$marker"}
   if [ ! -d "$src/$from" ] || [ "$n" != "$prefix$from" ]; then
     rm -rf "$d"
@@ -139,7 +150,7 @@ for n in "${names[@]}"; do
   cp -R "$src/$n" "$stage"
   log="$tmp/$target.log"
   NAME="$n" PREFIX="$prefix" ALT="$alt" MARKER="$marker$n" LOG="$log" perl -i -pe '
-    BEGIN { $fm = 0; $done_name = 0; $alt = qr/`($ENV{ALT})`/; }
+    BEGIN { $fm = 0; $done_name = 0; my $a = join "|", map { quotemeta } split /\|/, $ENV{ALT}; $alt = qr/`($a)`/; }
     $line = $.;
     if (/^---\s*$/) { $fm++; }
     $in_fm = ($fm == 1);
@@ -162,7 +173,7 @@ for n in "${names[@]}"; do
       open(my $l, ">>", $ENV{LOG}); print $l "rewrote $line: $_"; close $l;
     }
   ' "$stage/SKILL.md"
-  if ! grep -q -F "$marker$n" "$stage/SKILL.md"; then
+  if [ "$(synced_from "$stage/SKILL.md" "$target")" != "$marker$n" ]; then
     echo "error: $src/$n/SKILL.md has no 'name: $n' line in its frontmatter" >&2
     exit 1
   fi
@@ -184,7 +195,10 @@ for n in "${names[@]}"; do
       unchanged+=("$target")
       continue
     fi
-    grep -q -F "$marker" "$dst/$target/SKILL.md" 2>/dev/null || overwrote_unmarked+=("$target")
+    case "$(synced_from "$dst/$target/SKILL.md" "$target" 2>/dev/null)" in
+      "$marker"*) ;;
+      *) overwrote_unmarked+=("$target") ;;
+    esac
     rm -rf "${dst:?}/$target"
     updated+=("$target")
   else
