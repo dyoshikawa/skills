@@ -158,6 +158,12 @@ Do not close an issue without leaving this reasoning comment.
    used only for the review/fix/merge loop, not for PR creation. It runs
    the `review-pr` skill, fixes every `mid`-or-above finding, and merges the PR once a
    review round is clean and CI is green; the merge auto-closes the issue.
+   - If the fix falls under the lower-trust rule in **Safety and Trust
+     Boundaries** (it edits agent instructions or their tooling, or
+     authentication, permission, or secret-handling code, and the issue is
+     from a non-maintainer), tell the `goal-pr` skill to hold the merge. It runs the
+     review/fix loop to a clean, green state and stops before merging; leave the
+     PR open, report it as held for the maintainer, and mark the issue processed.
    - If the `goal-pr` skill hits its iteration cap without converging, leave the PR open,
      report it, mark the issue as processed so it is not retried in this run, and
      move on to the next issue instead of merging.
@@ -191,6 +197,8 @@ Summarize, per issue:
 
 - **Closed (no action):** issue number, title, and the reason it was closed.
 - **Resolved (merged):** issue number, title, and the PR URL that closed it.
+- **Held for maintainer merge:** issue number, title, PR URL, the issue author,
+  and why it was held.
 - **Capped / left open (the `goal-pr` skill did not converge):** issue number, title, PR
   URL, and the remaining `mid`-or-above findings.
 - **Inconclusive:** issue number, title, and what a maintainer still needs to

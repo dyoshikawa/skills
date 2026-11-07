@@ -57,14 +57,18 @@ commit on the PR and record the head commit:
 gh api repos/{owner}/{repo}/pulls/<target_pr> \
   --jq '{head_sha: .head.sha, head_branch: .head.ref, head_repo: .head.repo.full_name, base_repo: .base.repo.full_name}'
 gh api --paginate repos/{owner}/{repo}/pulls/<target_pr>/commits \
-  --jq '.[] | {sha, author: .author.login, author_id: .author.id, committer: .committer.login}'
+  --jq '.[] | {sha, author: .author.login, author_id: .author.id, committer: .committer.login, verified: .commit.verification.verified, reason: .commit.verification.reason}'
 ```
 
 Continue only when:
 
 - `head_repo` equals `base_repo` and `head_branch` starts with `dependabot/`.
-- Every commit's `author` is `dependabot[bot]` with `author_id` `49699333`,
-  except commits you pushed yourself earlier in this run (Step 3-2).
+- Every commit, except the ones whose SHAs you recorded when you pushed them
+  yourself earlier in this run (Step 3-2), has `author` `dependabot[bot]`,
+  `author_id` `49699333`, `committer` `web-flow`, `verified` `true` and
+  `reason` `valid`. The author fields alone are not enough: GitHub maps them
+  from the commit's email address, which anyone can set, while a genuine
+  Dependabot commit is also signed by GitHub (`web-flow`).
 
 Otherwise stop and report the foreign commits (sha and author) instead of
 running anything from the branch or merging it. Keep `head_sha` — it is the
@@ -130,10 +134,15 @@ descriptive English message explaining what was excluded/fixed and why, and push
 back to the Dependabot branch:
 
 ```bash
-git push origin "HEAD:refs/heads/$head_branch"
+git push origin 'HEAD:refs/heads/<head_branch from Step 1>'
 ```
 
-After the push, set `head_sha` to your new commit (`git rev-parse HEAD`).
+(Each command block may run in a fresh shell, so spell the branch name out
+again in single quotes here rather than relying on `$head_branch`.)
+
+After the push, set `head_sha` to your new commit (`git rev-parse HEAD`) and
+record the SHAs of the commits you pushed, so Step 3-3 can tell them from
+foreign ones.
 
 Note that pushing a non-Dependabot commit stops Dependabot's auto-rebase for this
 PR — that is acceptable because the intent is to merge it now.

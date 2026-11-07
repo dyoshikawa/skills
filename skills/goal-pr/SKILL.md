@@ -49,7 +49,8 @@ stop:
 - The current local branch name equals `headRefName`.
 - `git rev-parse HEAD` equals `headRefOid` (the local branch holds exactly the
   PR's head commit). If the local branch is only ahead with your own unpushed
-  commits, push them first and re-read; if it is only behind, fast-forward with
+  commits, push them first (`git push origin 'HEAD:refs/heads/<headRefName>'`)
+  and re-read; if it is only behind, fast-forward with
   `git pull --ff-only`. Anything else means the branches diverged — ask.
 
 ## 1. Exit Condition
@@ -71,16 +72,18 @@ Repeat the following until the exit condition is satisfied or the cap is hit.
 
 ### 2-1. Review Phase
 
-Use the `review-pr` skill with `target_pr`. It assigns each finding a
+First record the PR head commit this round reviews as `reviewed_sha`:
+
+```bash
+gh pr view <target_pr> --json headRefOid --jq .headRefOid
+```
+
+A clean round only approves that commit. Then use the `review-pr` skill with `target_pr`. It assigns each finding a
 severity (`low` / `mid` / `high` / `critical`) and a sequential number, and also
 reports the GitHub Actions workflow status.
 
 Note: the `review-pr` skill only reads remote state and must not switch the local branch.
 Keep that constraint intact during the review phase.
-
-Record the PR head commit the round reviewed (`gh pr view <target_pr> --json
-headRefOid --jq .headRefOid`, read right before the review starts) as
-`reviewed_sha`. A clean round only approves that commit.
 
 ### 2-2. Evaluate the Exit Condition
 
@@ -144,13 +147,17 @@ Safety rules for the merge:
 - If the PR touches GitHub Actions workflows, build/release configuration, or
   dependency manifests (e.g. `package.json`, lockfiles), do **not** auto-merge.
   Stop and ask the user to confirm, since these changes carry higher risk.
+- If the caller asked to **hold the merge** (e.g. `batch-all-issues` for a fix
+  derived from lower-trust content), stop here once the exit condition holds:
+  leave the PR open and report it as `Held` instead of merging.
 
 ## 4. Final Report
 
 After the loop ends, report to the user:
 
-- **Outcome**: `Merged` (exit condition met and PR merged) or `Capped` (hit the
-  iteration cap without converging; not merged).
+- **Outcome**: `Merged` (exit condition met and PR merged), `Held` (exit
+  condition met, merge left to the user as the caller asked), or `Capped` (hit
+  the iteration cap without converging; not merged).
 - **Iterations**: how many review/fix rounds were executed.
 - **Final severity summary**: the counts per severity from the last review
   round.

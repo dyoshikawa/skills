@@ -90,7 +90,7 @@ Attempt to create the issue directly:
 
 ```bash
 gh issue create --repo <owner/repo> \
-  --title "<title>" \
+  --title '<title>' \
   --body-file <path to english body>
 ```
 
