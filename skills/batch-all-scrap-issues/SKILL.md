@@ -155,6 +155,10 @@ Do not close an issue without leaving this reasoning comment.
    `Closes #<issue_number>` line so the issue auto-closes on merge. Creating the
    PR here — rather than letting the `goal-pr` skill create it — is mandatory, because it
    guarantees the `Closes` line is present.
+   Write the commit message and the PR body to files outside the working tree
+   with the file-writing tool and pass them with `git commit -F <file>` and
+   `gh pr create --title '<title>' --body-file <file>` (as in `commit-push-pr`);
+   the body cites issue text, which must never sit in a double-quoted argument.
 5. Use the `goal-pr` skill with that **existing** PR number, so the `goal-pr` skill is
    used only for the review/fix/merge loop, not for PR creation. It runs
    the `review-pr` skill, fixes every `mid`-or-above finding, and merges the PR once a

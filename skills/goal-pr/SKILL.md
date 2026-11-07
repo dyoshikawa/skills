@@ -131,7 +131,8 @@ Emit a short status line such as
 ## 3. Merge
 
 Only reach this step once the exit condition in Section 1 holds — clean findings
-**and** green CI. Merge the PR by using the `merge-pr` skill with
+**and** green CI. Apply the safety rules below **before** invoking `merge-pr`;
+if one of them holds the PR, do not invoke it. Otherwise merge the PR by using the `merge-pr` skill with
 `target_pr` and the clean round's `reviewed_sha`. That skill verifies the PR is
 open, checks GitHub Actions status, merges with `gh pr merge --admin --merge
 --match-head-commit <reviewed_sha>`, posts a thank-you comment, and cleans up
@@ -146,7 +147,9 @@ Safety rules for the merge:
   wait.
 - If the PR touches GitHub Actions workflows, build/release configuration, or
   dependency manifests (e.g. `package.json`, lockfiles), do **not** auto-merge.
-  Stop and ask the user to confirm, since these changes carry higher risk.
+  Stop and ask the user to confirm, since these changes carry higher risk. When
+  an autonomous caller (e.g. `batch-all-issues`) invoked this skill, do not wait:
+  leave the PR open and return `Held`.
 - If the caller marked the PR as having a **lower-trust origin** (e.g.
   `batch-all-issues` for a fix derived from a non-maintainer's issue), check the
   final diff right before merging (`gh pr diff <target_pr> --name-only`, plus
@@ -159,8 +162,9 @@ Safety rules for the merge:
 After the loop ends, report to the user:
 
 - **Outcome**: `Merged` (exit condition met and PR merged), `Held` (exit
-  condition met, merge left to the user as the caller asked), or `Capped` (hit
-  the iteration cap without converging; not merged).
+  condition met; merge left to the user because the final diff hit a
+  lower-trust or high-risk rule in Section 3), or `Capped` (hit the iteration
+  cap without converging; not merged).
 - **Iterations**: how many review/fix rounds were executed.
 - **Final severity summary**: the counts per severity from the last review
   round.
