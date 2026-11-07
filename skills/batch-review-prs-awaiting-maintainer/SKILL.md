@@ -65,7 +65,7 @@ at all):
    `create-scrap-issue` skill with the findings (background context plus the
    suggested follow-ups), so they are tracked as a `maintainer-scrap` issue
    instead of blocking the merge. Pass the provenance with them — "Derived from
-   reviewing PR #<number> by @<author login>" — so the issue's **Provenance**
+   reviewing PR #<number> by `<author login>`" (no `@`, so the contributor is not pinged) — so the issue's **Provenance**
    section records that the content came from a contributor's PR. If there are
    no findings at all, skip this.
 2. Merge the PR by using the `merge-pr` skill with `target_pr` and

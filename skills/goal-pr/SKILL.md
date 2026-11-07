@@ -147,9 +147,12 @@ Safety rules for the merge:
 - If the PR touches GitHub Actions workflows, build/release configuration, or
   dependency manifests (e.g. `package.json`, lockfiles), do **not** auto-merge.
   Stop and ask the user to confirm, since these changes carry higher risk.
-- If the caller asked to **hold the merge** (e.g. `batch-all-issues` for a fix
-  derived from lower-trust content), stop here once the exit condition holds:
-  leave the PR open and report it as `Held` instead of merging.
+- If the caller marked the PR as having a **lower-trust origin** (e.g.
+  `batch-all-issues` for a fix derived from a non-maintainer's issue), check the
+  final diff right before merging (`gh pr diff <target_pr> --name-only`, plus
+  the diff itself for auth/secret code). If it touches agent instructions or their tooling (`CLAUDE.md`, `AGENTS.md`, `.claude/**`, `.rulesync/**`, skill definitions, hooks, MCP configs) or authentication, permission, or secret-handling code, do not
+  merge: leave the PR open and report it as `Held`. Check the final diff, not
+  the first fix, since fix rounds can add files.
 
 ## 4. Final Report
 

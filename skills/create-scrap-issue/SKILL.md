@@ -23,7 +23,7 @@ Create a single GitHub issue that consolidates all the content provided by the u
   - **Background**: Describe the context, motivation, and why this matters.
   - **Details**: Include the specific content, observations, or problems passed by the user.
   - **Solution / Next Steps**: Propose a solution or outline actionable next steps.
-  - **Provenance**: Where the content came from. Other skills trust `maintainer-scrap` issues because a maintainer wrote them, so say plainly when the content was derived from someone else's material — e.g. "Derived from reviewing contributor PR #123 by @login", "From issue #45 by @login", or a web page URL. Write "Maintainer notes" only when the content is the maintainer's own.
+  - **Provenance**: Where the content came from. Other skills trust `maintainer-scrap` issues because a maintainer wrote them, so say plainly when the content was derived from someone else's material — e.g. "Derived from reviewing contributor PR #123 by `login`", "From issue #45 by `login`" (no `@`, so nobody is pinged), or a web page URL. Write "Maintainer notes" only when the content is the maintainer's own.
 - Use a clear, descriptive title that summarizes the scrap topic.
 - Use `gh issue create` to create the issue.
 
