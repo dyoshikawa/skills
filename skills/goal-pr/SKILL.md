@@ -49,9 +49,9 @@ stop:
 - The current local branch name equals `headRefName`.
 - `git rev-parse HEAD` equals `headRefOid` (the local branch holds exactly the
   PR's head commit). If the local branch is only ahead with your own unpushed
-  commits, push them first (`git push origin 'HEAD:refs/heads/<headRefName>'`)
-  and re-read; if it is only behind, fast-forward with
-  `git pull --ff-only`. Anything else means the branches diverged — ask.
+  commits (`git merge-base --is-ancestor <headRefOid> HEAD` succeeds), push
+  them first (`git push origin 'HEAD:refs/heads/<headRefName>'`) and re-read;
+  if it is only behind, fast-forward with `git merge --ff-only <headRefOid>`. Anything else means the branches diverged — ask.
 
 ## 1. Exit Condition
 
@@ -148,11 +148,12 @@ Safety rules for the merge:
 - If the PR touches GitHub Actions workflows, build/release configuration, or
   dependency manifests (e.g. `package.json`, lockfiles), do **not** auto-merge.
   Stop and ask the user to confirm, since these changes carry higher risk. When
-  an autonomous caller (e.g. `batch-all-issues`) invoked this skill, do not wait:
+  an autonomous caller (e.g. `batch-all-issues` or `batch-all-scrap-issues`) invoked this skill, do not wait:
   leave the PR open and return `Held`.
 - If the caller marked the PR as having a **lower-trust origin** (e.g.
   `batch-all-issues` for a fix derived from a non-maintainer's issue), check the
-  final diff right before merging (`gh pr diff <target_pr> --name-only`, plus
+  final diff right before merging (confirm the head still equals
+  `reviewed_sha`, then `gh pr diff <target_pr> --name-only`, plus
   the diff itself for auth/secret code). If it touches agent instructions or their tooling (`CLAUDE.md`, `AGENTS.md`, `.claude/**`, `.rulesync/**`, skill definitions, hooks, MCP configs) or authentication, permission, or secret-handling code, do not
   merge: leave the PR open and report it as `Held`. Check the final diff, not
   the first fix, since fix rounds can add files.

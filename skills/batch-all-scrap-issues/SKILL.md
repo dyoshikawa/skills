@@ -170,6 +170,10 @@ Do not close an issue without leaving this reasoning comment.
      their tooling, or authentication, permission, or secret-handling code;
      leave a held PR open, report it as held for the maintainer, and mark the
      issue processed.
+   - Tell the `goal-pr` skill it runs in an autonomous batch, so it returns
+     `Held` instead of stopping to ask. Treat `Held` for either reason
+     (lower-trust origin or a high-risk workflow/build/manifest change) the same
+     way: leave the PR open, report it, and mark the issue processed.
    - If the `goal-pr` skill hits its iteration cap without converging, leave the PR open,
      report it, mark the issue as processed so it is not retried in this run, and
      move on to the next issue instead of merging.
