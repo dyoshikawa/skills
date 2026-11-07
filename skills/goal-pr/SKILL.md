@@ -29,9 +29,28 @@ once a review round reports no `mid`-or-above findings.
      branch, and open a PR.
    - Then resolve `target_pr` to the freshly created PR number.
 
-Confirm that the current local branch is the PR's head branch, because the fix
-phase below must commit and push fixes onto that branch. If they differ, ask the
-user how to proceed and stop.
+Confirm that the current local branch really is the PR's head branch, because
+the fix phase below runs the repository's checks and pushes fixes onto that
+branch. A matching branch name alone is not enough — a fork PR can use any name,
+including `main` or one of your own branches. Read the PR's head identity:
+
+```bash
+gh pr view <target_pr> --json headRefName,headRefOid,isCrossRepository,baseRefName
+git fetch origin
+git rev-parse HEAD
+```
+
+Continue only when all of these hold; otherwise ask the user how to proceed and
+stop:
+
+- `isCrossRepository` is `false` (the head branch lives in this repository).
+  Fork PRs are not driven by this skill.
+- `headRefName` is not `baseRefName` or the repository's default branch.
+- The current local branch name equals `headRefName`.
+- `git rev-parse HEAD` equals `headRefOid` (the local branch holds exactly the
+  PR's head commit). If the local branch is only ahead with your own unpushed
+  commits, push them first and re-read; if it is only behind, fast-forward with
+  `git pull --ff-only`. Anything else means the branches diverged — ask.
 
 ## 1. Exit Condition
 
@@ -58,6 +77,10 @@ reports the GitHub Actions workflow status.
 
 Note: the `review-pr` skill only reads remote state and must not switch the local branch.
 Keep that constraint intact during the review phase.
+
+Record the PR head commit the round reviewed (`gh pr view <target_pr> --json
+headRefOid --jq .headRefOid`, read right before the review starts) as
+`reviewed_sha`. A clean round only approves that commit.
 
 ### 2-2. Evaluate the Exit Condition
 
@@ -88,9 +111,15 @@ on the local branch directly:
    ```bash
    git status
    git add <changed files>
-   git commit -m "<message>"
-   git push origin HEAD
+   git commit -F <message file>
+   git push origin 'HEAD:refs/heads/<headRefName>'
    ```
+
+   Write the commit message to a file outside the working tree with the
+   file-writing tool and pass it with `-F`, rather than putting free-form text
+   in `-m "..."`: review findings can quote PR or issue text, and backticks or
+   `$(...)` inside double quotes run in your shell. Keep the push refspec in
+   single quotes as shown (escape any `'` in the branch name as `'\''`).
 
 Emit a short status line such as
 `Iteration N — mid: X, high: Y, critical: Z; pushed fixes`, then return to
@@ -100,9 +129,11 @@ Emit a short status line such as
 
 Only reach this step once the exit condition in Section 1 holds — clean findings
 **and** green CI. Merge the PR by using the `merge-pr` skill with
-`target_pr`. That skill verifies the PR is open, checks GitHub Actions status,
-merges with `gh pr merge --admin --merge`, posts a thank-you comment, and cleans
-up the local branch.
+`target_pr` and the clean round's `reviewed_sha`. That skill verifies the PR is
+open, checks GitHub Actions status, merges with `gh pr merge --admin --merge
+--match-head-commit <reviewed_sha>`, posts a thank-you comment, and cleans up
+the local branch. If the PR head is no longer `reviewed_sha` (someone pushed
+after the review), do not merge: return to Section 2-1 and review the new head.
 
 Safety rules for the merge:
 

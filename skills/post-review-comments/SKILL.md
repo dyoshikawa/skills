@@ -34,20 +34,26 @@ Write a brief overall assessment of the PR. This is a summary-level comment, not
 
 Use a single `gh api` call to submit both line-level comments and the overall comment together as one review:
 
-```bash
-gh api repos/{owner}/{repo}/pulls/{pr_number}/reviews \
-  --method POST \
-  -f event="COMMENT" \
-  -f body="<overall comment>" \
-  -f 'comments[]={...}' ...
+Write the whole review as a JSON file outside the working tree with the file-writing tool, then send it with `--input`:
+
+```json
+{
+  "event": "COMMENT",
+  "body": "<overall comment>",
+  "comments": [{ "path": "src/foo.ts", "line": 42, "body": "<line comment>" }]
+}
 ```
 
-Each line comment requires: `path`, `line` (line number in the diff's new file), and `body`.
+```bash
+gh api repos/{owner}/{repo}/pulls/{pr_number}/reviews --method POST --input <review json file>
+```
+
+Each line comment requires: `path`, `line` (line number in the diff's new file), and `body`. Never put comment text in double-quoted `-f body="..."` arguments: review comments quote PR code and text, and backticks or `$(...)` there run in your shell.
 
 If you have no line-level comments, fall back to:
 
 ```bash
-gh pr review <pr_number> --comment --body "<overall comment>"
+gh pr review <pr_number> --comment --body-file <comment file>
 ```
 
 ## Writing Style

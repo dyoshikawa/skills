@@ -35,6 +35,10 @@ Process the PRs one at a time. For each PR number `target_pr`:
 
 ### 2-1. Review
 
+Right before the review, record the PR's head commit as `reviewed_sha`
+(`gh pr view <target_pr> --json headRefOid --jq .headRefOid`). The review only
+covers that commit.
+
 Use the `review-pr` skill with `target_pr`. It assigns each finding a
 severity (`low` / `mid` / `high` / `critical`) and also reports the GitHub
 Actions workflow status.
@@ -60,8 +64,14 @@ at all):
 1. If any non-blocking findings remain, capture them for later by invoking the
    `create-scrap-issue` skill with the findings (background context plus the
    suggested follow-ups), so they are tracked as a `maintainer-scrap` issue
-   instead of blocking the merge. If there are no findings at all, skip this.
-2. Merge the PR by using the `merge-pr` skill with `target_pr`.
+   instead of blocking the merge. Pass the provenance with them — "Derived from
+   reviewing PR #<number> by @<author login>" — so the issue's **Provenance**
+   section records that the content came from a contributor's PR. If there are
+   no findings at all, skip this.
+2. Merge the PR by using the `merge-pr` skill with `target_pr` and
+   `reviewed_sha`. `merge-pr` merges only that commit
+   (`--match-head-commit`); if the PR head has moved since the review, it stops
+   and the PR is reviewed again instead of merged.
 
 Follow the existing merge safety rules: never merge while any CI check is `fail`
 or `pending`, and if the PR touches GitHub Actions workflows, build/release

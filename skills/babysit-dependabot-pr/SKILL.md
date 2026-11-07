@@ -49,6 +49,27 @@ If any check fails — a human-authored PR, a look-alike login, or a different i
 **stop** and report that the PR is not a genuine Dependabot bump. Do not proceed
 to touch or merge it.
 
+The opener check alone does not cover the branch content: anyone with write
+access can push extra commits onto a `dependabot/*` branch. So also check every
+commit on the PR and record the head commit:
+
+```bash
+gh api repos/{owner}/{repo}/pulls/<target_pr> \
+  --jq '{head_sha: .head.sha, head_branch: .head.ref, head_repo: .head.repo.full_name, base_repo: .base.repo.full_name}'
+gh api --paginate repos/{owner}/{repo}/pulls/<target_pr>/commits \
+  --jq '.[] | {sha, author: .author.login, author_id: .author.id, committer: .committer.login}'
+```
+
+Continue only when:
+
+- `head_repo` equals `base_repo` and `head_branch` starts with `dependabot/`.
+- Every commit's `author` is `dependabot[bot]` with `author_id` `49699333`,
+  except commits you pushed yourself earlier in this run (Step 3-2).
+
+Otherwise stop and report the foreign commits (sha and author) instead of
+running anything from the branch or merging it. Keep `head_sha` — it is the
+commit that Step 4 is allowed to merge.
+
 ## Step 2: Check CI Status
 
 ```bash
@@ -94,9 +115,14 @@ When editing the PR branch (this is a maintainer action, distinct from read-only
 review — switching the working tree here is expected):
 
 ```bash
-git fetch origin <head_branch> && git checkout -b babysit-<target_pr> FETCH_HEAD
+head_branch='<head_branch from Step 1>'   # single-quoted; escape any ' as '\''
+git fetch origin "refs/heads/$head_branch" && git checkout -b babysit-<target_pr> FETCH_HEAD
+git rev-parse HEAD   # must equal head_sha from Step 1; stop if it does not
 # ...make the fix (e.g. pin the dependency, regenerate the lockfile)...
 ```
+
+The branch name comes from the PR, so it is always passed as a quoted variable,
+never pasted into the command line.
 
 Then, **before committing**, run `pnpm cicheck` to verify the fix locally (follow
 the project rules: no here-documents, never `--no-verify`). Commit with a
@@ -104,8 +130,10 @@ descriptive English message explaining what was excluded/fixed and why, and push
 back to the Dependabot branch:
 
 ```bash
-git push origin HEAD:<head_branch>
+git push origin "HEAD:refs/heads/$head_branch"
 ```
+
+After the push, set `head_sha` to your new commit (`git rev-parse HEAD`).
 
 Note that pushing a non-Dependabot commit stops Dependabot's auto-rebase for this
 PR — that is acceptable because the intent is to merge it now.
@@ -113,7 +141,9 @@ PR — that is acceptable because the intent is to merge it now.
 ### 3-3. Wait for green
 
 Re-run/await CI (`gh pr checks <target_pr>`) until every check passes. If it fails
-again, return to Step 3-1 with the new logs.
+again, return to Step 3-1 with the new logs. Before going on, repeat the commit
+check from Step 1: if the head is no longer `head_sha`, someone else pushed —
+stop and report it.
 
 ## Step 4: Merge
 
@@ -122,8 +152,12 @@ Confirm the PR is `OPEN` and `MERGEABLE`, then merge with admin (a `BLOCKED`
 fine; a failing/pending check is not):
 
 ```bash
-gh pr merge <target_pr> --admin --merge
+gh pr merge <target_pr> --admin --merge --match-head-commit <head_sha>
 ```
+
+`--match-head-commit` makes GitHub refuse the merge if the branch moved after
+your checks, so a commit pushed in the meantime cannot be merged with `--admin`.
+If it is refused, go back to Step 1.
 
 Leave a short comment recording what happened — in particular, if a dependency
 was excluded, name it, the version it was held at, and link the tracking issue.

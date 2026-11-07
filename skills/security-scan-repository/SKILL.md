@@ -39,7 +39,7 @@ The scan covers both **vulnerabilities** (unsafe code the maintainer wrote) and 
    - Do not install new global tooling. When a tool is unavailable, say so in the report's coverage section instead of silently skipping it.
    - Automated output is input to the review, not the review itself: confirm every reported hit against the actual file before it becomes a finding.
 
-3. Call security-reviewer subagents in parallel, one per domain, passing each its file list from step 1 as absolute paths under the data-only copy `<copy>`. Split a domain across several subagents when its file list is large; keep each subagent under roughly 40 files.
+3. Call security-reviewer subagents in parallel (use a read-only agent when one is available — file reading and search only, no shell, network, or edit tools — and otherwise rely on the instructions below), one per domain, passing each its file list from step 1 as absolute paths under the data-only copy `<copy>`. Split a domain across several subagents when its file list is large; keep each subagent under roughly 40 files.
 
    - **Secrets and credentials** — hardcoded API keys, tokens, private keys, connection strings; credentials in test fixtures, `.env` files, or committed configs; secrets surviving in git history (`<git> log -p -S'<value>'` on suspicious values — always single-quote the value, escaping any `'` as `'\''`, and search for a plain substring instead when it holds newlines or control characters, since an unquoted or double-quoted `$(...)` in a planted value runs in your shell); values written to logs or error messages.
 

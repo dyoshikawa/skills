@@ -65,8 +65,10 @@ Then choose appropriate labels from the existing repository labels based on the 
 ## Step 5: Create the Issue
 
 ```bash
-gh issue create --title "<concise title>" --body "<drafted body>" --label "<label1>,<label2>,..."
+gh issue create --title '<concise title>' --body-file <body file> --label '<label1>,<label2>,...'
 ```
+
+Write the body to a file outside the working tree with the file-writing tool and pass it with `--body-file`. Never inline free-form text in a double-quoted `--body "..."` argument: backticks and `$(...)` — common in Markdown and in quoted issue, PR, or web text — run in your shell there. Put the title in single quotes, escaping any `'` as `'\''`.
 
 ## Step 6: Report Result
 

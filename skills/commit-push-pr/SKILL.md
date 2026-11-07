@@ -22,7 +22,7 @@ If the current branch is `main` or `master`:
 1. Run `git status` to check for changes
 2. If there are unstaged changes, stage them: `git add .`
 3. Analyze the changes and create a meaningful commit message
-4. Commit with: `git commit -m "<commit-message>"`
+4. Write the commit message to a file outside the working tree with the file-writing tool and commit with: `git commit -F <message file>` (free-form text inside `-m "..."` runs backticks and `$(...)` in your shell)
 
 ## Step 3: Push to Remote
 
@@ -45,8 +45,10 @@ gh pr view --json number,title,body 2>/dev/null
 Create a new PR:
 
 ```bash
-gh pr create --title "<title>" --body "<description>"
+gh pr create --title '<title>' --body-file <description file>
 ```
+
+Write the body to a file outside the working tree with the file-writing tool and pass it with `--body-file`. Never inline free-form text in a double-quoted `--body "..."` argument: backticks and `$(...)` — common in Markdown and in quoted issue, PR, or web text — run in your shell there. Put the title in single quotes, escaping any `'` as `'\''`.
 
 The PR description should include:
 
@@ -59,8 +61,10 @@ The PR description should include:
 2. If updates are needed (e.g., scope of changes has expanded), update the PR using GitHub API:
 
 ```bash
-gh api repos/<owner>/<repo>/pulls/<pr-number> -X PATCH -f title="<new-title>" -f body="<new-description>"
+gh api repos/<owner>/<repo>/pulls/<pr-number> -X PATCH -f title='<new-title>' -F body=@<description file>
 ```
+
+`-F body=@<file>` reads the description from a file written as above; keep the title in single quotes.
 
 Note: Use `gh api` instead of `gh pr edit` to avoid GraphQL deprecation warnings. 3. If no updates are needed, skip this step
 

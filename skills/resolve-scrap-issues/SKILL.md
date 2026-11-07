@@ -68,8 +68,14 @@ If validation is genuinely inconclusive (the legitimacy cannot be settled by res
 
 For every issue classified as **No action needed**, post an explanatory comment and close it. The comment must state the reason and cite the evidence (inline links to primary sources, file paths, or related issue/PR numbers) so the decision is auditable. Write the comment in English.
 
+Write the comment to a file outside the working tree with the file-writing
+tool, then post it and close the issue. Never put the comment text inside a
+double-quoted `--comment "..."` argument: it cites issue and web text, and
+backticks or `$(...)` there run in your shell.
+
 ```bash
-gh issue close <issue_number> --comment "<reason with evidence>"
+gh issue comment <issue_number> --body-file <comment file>
+gh issue close <issue_number>
 ```
 
 Do not close an issue without leaving this reasoning comment.
@@ -106,15 +112,17 @@ Stage and commit with a clear message, then push:
 
 ```bash
 git add .
-git commit -m "<message>"
+git commit -F <message file>
 git push -u origin <branch-name>
 ```
 
 Open a single pull request that resolves all actionable issues in the batch. The body must include a `Closes #<n>` line for every issue it fixes so they auto-close on merge:
 
 ```bash
-gh pr create --title "<title>" --body "<description>"
+gh pr create --title '<title>' --body-file <description file>
 ```
+
+Write the body to a file outside the working tree with the file-writing tool and pass it with `--body-file`. Never inline free-form text in a double-quoted `--body "..."` argument: backticks and `$(...)` — common in Markdown and in quoted issue, PR, or web text — run in your shell there. Put the title in single quotes, escaping any `'` as `'\''`. Write the commit message to a file the same way and pass it with `git commit -F`.
 
 The PR description should include:
 
