@@ -25,7 +25,7 @@ Let's resume the release process.
 6. Update the version with `pnpm version ${new_version} --no-git-tag-version`.
 7. Since `package.json` will be modified, execute `git commit` and `git push`.
 8. As a precaution, verify that every hardcoded version location found in step 5 now reports ${new_version}.
-9. Run `gh pr create` to the main branch.
+9. Run `gh pr create --base main --title '<title>' --body-file <body file>` to the main branch. Write the body to a file outside the working tree with the file-writing tool; never inline it in a double-quoted `--body "..."`, since it quotes PR titles and backticks or `$(...)` there run in your shell.
 10. Create a **draft** release using `gh release create v${new_version} --draft --title v${new_version} --notes-file ./tmp/release-notes/*.md` command on the repository you are working in. This creates a draft release so that the release-asset workflow can upload assets later.
 
 Note: distribution artifacts that embed checksums of the release binaries (for example a Homebrew tap formula) are NOT updated here. Those checksums only exist after the release PR merges and the asset-publishing workflow uploads them. The `goal-release` skill performs that update as its post-merge step. When releasing manually without the `goal-release` skill, run that step yourself after the assets are published, following the project's own documented procedure.

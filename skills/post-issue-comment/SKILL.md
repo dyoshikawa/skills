@@ -37,8 +37,10 @@ Based on the issue content and the user's `intent`, draft a reply comment.
 Post the drafted reply using:
 
 ```bash
-gh issue comment <issue_number> --body "<reply body>"
+gh issue comment <issue_number> --body-file <reply file>
 ```
+
+Write the reply to a file outside the working tree with the file-writing tool first. Never inline it in a double-quoted `--body "..."` argument: backticks and `$(...)` there run in your shell.
 
 ## Writing Style
 

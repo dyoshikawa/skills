@@ -23,6 +23,7 @@ Create a single GitHub issue that consolidates all the content provided by the u
   - **Background**: Describe the context, motivation, and why this matters.
   - **Details**: Include the specific content, observations, or problems passed by the user.
   - **Solution / Next Steps**: Propose a solution or outline actionable next steps.
+  - **Provenance**: Where the content came from. Other skills trust `maintainer-scrap` issues because a maintainer wrote them, so say plainly when the content was derived from someone else's material — e.g. "Derived from reviewing contributor PR #123 by `login`", "From issue #45 by `login`" (no `@`, so nobody is pinged), or a web page URL. Write "Maintainer notes" only when the content is the maintainer's own.
 - Use a clear, descriptive title that summarizes the scrap topic.
 - Use `gh issue create` to create the issue.
 
@@ -32,4 +33,4 @@ Create a single GitHub issue that consolidates all the content provided by the u
 2. Organize and enrich it with background information and proposed solutions.
 3. Check available labels with `gh label list` and determine which labels to attach in addition to `maintainer-scrap`.
 4. Draft the issue body in the structure above.
-5. Create the issue with the appropriate labels using `gh issue create --label maintainer-scrap --label <other-labels>`.
+5. Write the body to a file outside the working tree with the file-writing tool, then create the issue with `gh issue create --title '<title>' --body-file <body file> --label maintainer-scrap --label <other-labels>` (title in single quotes, escaping any `'` as `'\''`; never inline the body in a double-quoted `--body "..."`, where backticks and `$(...)` run in your shell).

@@ -83,7 +83,7 @@ reviewed, expected content.
 ## 4. Merge the Release PR
 
 Use the `merge-pr` skill with the release PR number. It re-verifies the PR
-state and CI status, merges with `gh pr merge --admin --merge`, posts a
+state and CI status, merges with `gh pr merge --admin --merge --match-head-commit <head sha>`, posts a
 thank-you comment, and cleans up the local branch.
 
 Note: the `goal-pr` skill tells agents not to auto-merge PRs that touch `package.json`

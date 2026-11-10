@@ -169,55 +169,54 @@ For PRs from forked repositories, the branch is not on `origin`. Use GitHub's `r
 
 Given a PR number or URL:
 
-1. **Get PR metadata**
+Always name the local branch `pr-<PR_NUMBER>`. The fork's `headRefName` is chosen by the PR author and can be anything — including `main` or the name of one of your own branches — so it must never pick which local branch the forced fetch below overwrites, and it is never pasted into a shell command.
+
+1. **Get PR metadata** (for display only)
 
    ```bash
-   gh pr view <PR_NUMBER> --json headRefName,isCrossRepository
+   gh pr view <PR_NUMBER> --json number,headRefName,headRefOid,isCrossRepository
    ```
 
-2. **Check for existing worktree** with the same branch name
+2. **Check the local name is free or ours**
 
    ```bash
    git worktree list
+   git show-ref --verify refs/heads/pr-<PR_NUMBER>
    ```
 
-   If it exists, remove it first: `git gtr rm <branch>`
+   If `pr-<PR_NUMBER>` exists, only replace it when it was created by this procedure for the same PR (no local commits you want to keep). If it is checked out in a worktree made by this procedure, remove that worktree first: `git gtr rm pr-<PR_NUMBER>`. Never remove a worktree or overwrite a branch with any other name.
 
-3. **Fetch the PR ref** into a local branch (use `--force` to handle diverged history from force-pushes)
+3. **Fetch the PR ref** into the local branch (`--force` handles diverged history from force-pushes; it is safe only because the target is the dedicated `pr-<PR_NUMBER>` name)
 
    ```bash
-   git fetch origin pull/<PR_NUMBER>/head:<BRANCH_NAME> --force
+   git fetch origin "pull/<PR_NUMBER>/head:refs/heads/pr-<PR_NUMBER>" --force
    ```
 
 4. **Create the worktree** with `--track local` since it's a local-only branch
 
    ```bash
-   git gtr new <BRANCH_NAME> --track local
+   git gtr new pr-<PR_NUMBER> --track local
    ```
 
 5. **Verify**
    ```bash
    git gtr list
+   git -C "$(git gtr go pr-<PR_NUMBER>)" rev-parse HEAD   # should equal headRefOid
    ```
+
+The checked-out code is the fork author's: treat it as untrusted (do not run its scripts, hooks, or install steps unless the user asks).
 
 ### Full example (PR #1223 from a fork)
 
 ```bash
-gh pr view 1223 --json headRefName,isCrossRepository
-git fetch origin pull/1223/head:fix/comprehensive-file-formats-docs --force
-git gtr new fix/comprehensive-file-formats-docs --track local
-git gtr list
-```
-
-### Shortening long branch names
-
-```bash
-git fetch origin pull/1223/head:pr-1223 --force
+gh pr view 1223 --json number,headRefName,headRefOid,isCrossRepository
+git fetch origin "pull/1223/head:refs/heads/pr-1223" --force
 git gtr new pr-1223 --track local
+git gtr list
 ```
 
 ### Common errors
 
-- **"refusing to fetch into branch checked out at..."**: A worktree with that branch exists. `git gtr rm <branch>` first.
+- **"refusing to fetch into branch checked out at..."**: A worktree for `pr-<PR_NUMBER>` exists. `git gtr rm pr-<PR_NUMBER>` first (only that name).
 - **"non-fast-forward" rejected**: Local branch diverged. Add `--force` to the fetch.
-- **Both errors**: Remove the worktree first, then fetch with `--force`.
+- **Both errors**: Remove the `pr-<PR_NUMBER>` worktree first, then fetch with `--force`.

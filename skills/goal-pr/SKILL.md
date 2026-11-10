@@ -29,9 +29,29 @@ once a review round reports no `mid`-or-above findings.
      branch, and open a PR.
    - Then resolve `target_pr` to the freshly created PR number.
 
-Confirm that the current local branch is the PR's head branch, because the fix
-phase below must commit and push fixes onto that branch. If they differ, ask the
-user how to proceed and stop.
+Confirm that the current local branch really is the PR's head branch, because
+the fix phase below runs the repository's checks and pushes fixes onto that
+branch. A matching branch name alone is not enough — a fork PR can use any name,
+including `main` or one of your own branches. Read the PR's head identity:
+
+```bash
+gh pr view <target_pr> --json headRefName,headRefOid,isCrossRepository,baseRefName
+git fetch origin
+git rev-parse HEAD
+```
+
+Continue only when all of these hold; otherwise ask the user how to proceed and
+stop:
+
+- `isCrossRepository` is `false` (the head branch lives in this repository).
+  Fork PRs are not driven by this skill.
+- `headRefName` is not `baseRefName` or the repository's default branch.
+- The current local branch name equals `headRefName`.
+- `git rev-parse HEAD` equals `headRefOid` (the local branch holds exactly the
+  PR's head commit). If the local branch is only ahead with your own unpushed
+  commits (`git merge-base --is-ancestor <headRefOid> HEAD` succeeds), push
+  them first (`git push origin 'HEAD:refs/heads/<headRefName>'`) and re-read;
+  if it is only behind, fast-forward with `git merge --ff-only <headRefOid>`. Anything else means the branches diverged — ask.
 
 ## 1. Exit Condition
 
@@ -52,7 +72,13 @@ Repeat the following until the exit condition is satisfied or the cap is hit.
 
 ### 2-1. Review Phase
 
-Use the `review-pr` skill with `target_pr`. It assigns each finding a
+First record the PR head commit this round reviews as `reviewed_sha`:
+
+```bash
+gh pr view <target_pr> --json headRefOid --jq .headRefOid
+```
+
+A clean round only approves that commit. Then use the `review-pr` skill with `target_pr`. It assigns each finding a
 severity (`low` / `mid` / `high` / `critical`) and a sequential number, and also
 reports the GitHub Actions workflow status.
 
@@ -88,9 +114,15 @@ on the local branch directly:
    ```bash
    git status
    git add <changed files>
-   git commit -m "<message>"
-   git push origin HEAD
+   git commit -F <message file>
+   git push origin 'HEAD:refs/heads/<headRefName>'
    ```
+
+   Write the commit message to a file outside the working tree with the
+   file-writing tool and pass it with `-F`, rather than putting free-form text
+   in `-m "..."`: review findings can quote PR or issue text, and backticks or
+   `$(...)` inside double quotes run in your shell. Keep the push refspec in
+   single quotes as shown (escape any `'` in the branch name as `'\''`).
 
 Emit a short status line such as
 `Iteration N — mid: X, high: Y, critical: Z; pushed fixes`, then return to
@@ -99,10 +131,13 @@ Emit a short status line such as
 ## 3. Merge
 
 Only reach this step once the exit condition in Section 1 holds — clean findings
-**and** green CI. Merge the PR by using the `merge-pr` skill with
-`target_pr`. That skill verifies the PR is open, checks GitHub Actions status,
-merges with `gh pr merge --admin --merge`, posts a thank-you comment, and cleans
-up the local branch.
+**and** green CI. Apply the safety rules below **before** invoking `merge-pr`;
+if one of them holds the PR, do not invoke it. Otherwise merge the PR by using the `merge-pr` skill with
+`target_pr` and the clean round's `reviewed_sha`. That skill verifies the PR is
+open, checks GitHub Actions status, merges with `gh pr merge --admin --merge
+--match-head-commit <reviewed_sha>`, posts a thank-you comment, and cleans up
+the local branch. If the PR head is no longer `reviewed_sha` (someone pushed
+after the review), do not merge: return to Section 2-1 and review the new head.
 
 Safety rules for the merge:
 
@@ -112,14 +147,25 @@ Safety rules for the merge:
   wait.
 - If the PR touches GitHub Actions workflows, build/release configuration, or
   dependency manifests (e.g. `package.json`, lockfiles), do **not** auto-merge.
-  Stop and ask the user to confirm, since these changes carry higher risk.
+  Stop and ask the user to confirm, since these changes carry higher risk. When
+  an autonomous caller (e.g. `batch-all-issues` or `batch-all-scrap-issues`) invoked this skill, do not wait:
+  leave the PR open and return `Held`.
+- If the caller marked the PR as having a **lower-trust origin** (e.g.
+  `batch-all-issues` for a fix derived from a non-maintainer's issue), check the
+  final diff right before merging (confirm the head still equals
+  `reviewed_sha`, then `gh pr diff <target_pr> --name-only`, plus
+  the diff itself for auth/secret code). If it touches agent instructions or their tooling (`CLAUDE.md`, `AGENTS.md`, `.claude/**`, `.rulesync/**`, skill definitions, hooks, MCP configs) or authentication, permission, or secret-handling code, do not
+  merge: leave the PR open and report it as `Held`. Check the final diff, not
+  the first fix, since fix rounds can add files.
 
 ## 4. Final Report
 
 After the loop ends, report to the user:
 
-- **Outcome**: `Merged` (exit condition met and PR merged) or `Capped` (hit the
-  iteration cap without converging; not merged).
+- **Outcome**: `Merged` (exit condition met and PR merged), `Held` (exit
+  condition met; merge left to the user because the final diff hit a
+  lower-trust or high-risk rule in Section 3), or `Capped` (hit the iteration
+  cap without converging; not merged).
 - **Iterations**: how many review/fix rounds were executed.
 - **Final severity summary**: the counts per severity from the last review
   round.
